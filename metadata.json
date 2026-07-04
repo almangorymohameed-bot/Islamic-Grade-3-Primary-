@@ -1,0 +1,8 @@
+{
+  "name": "Remix: التربية الإسلامية - الصف الثالث",
+  "description": "منصة تفاعلية ممتعة لطلاب الصف السادس الابتدائي تحتوي على كتب مصورة تفاعلية، مرئيات لقصص الأنبياء والقرآن الكريم، وقسم للاختبارات التفاعلية لكل وحدة ودرس",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
