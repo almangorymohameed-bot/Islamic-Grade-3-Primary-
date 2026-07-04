@@ -727,7 +727,9 @@ export default function IllustratedStory({
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Quran Integration States
-  const [activeTab, setActiveTab] = useState<'lesson' | 'textbook' | 'quran'>('lesson');
+  const [activeTab, setActiveTab] = useState<'lesson' | 'textbook' | 'quran'>(
+    quranSurahsData[lesson.id] ? 'quran' : 'lesson'
+  );
   const [selectedQuranAyah, setSelectedQuranAyah] = useState<number | null>(1);
   const [isSurahPlaying, setIsSurahPlaying] = useState<boolean>(false);
   const [audioInstance, setAudioInstance] = useState<HTMLAudioElement | null>(null);
@@ -760,6 +762,13 @@ export default function IllustratedStory({
       setVerseAudioInstance(null);
     }
     setPlayingVerseNumber(null);
+
+    // If the lesson contains a Quran surah, open the 'quran' tab by default
+    if (quranSurahsData[lesson.id]) {
+      setActiveTab('quran');
+    } else {
+      setActiveTab('lesson');
+    }
   }, [lesson.id]);
 
   // Load complete Surah from Quran.cloud API when showing Quran tab
