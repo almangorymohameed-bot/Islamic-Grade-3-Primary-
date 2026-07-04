@@ -18,7 +18,10 @@ import {
   Copy,
   Check,
   Play,
-  Pause
+  Pause,
+  Repeat,
+  Gauge,
+  Settings
 } from 'lucide-react';
 import { Lesson, StorySlide, VocabularyWord } from '../types';
 import SoundEngine from '../lib/audio';
@@ -739,6 +742,24 @@ export default function IllustratedStory({
   const [verseAudioInstance, setVerseAudioInstance] = useState<HTMLAudioElement | null>(null);
   const [isVerseLoading, setIsVerseLoading] = useState<boolean>(false);
 
+  // Playback speed (1.0 = normal, 0.75 = slow) and Repeat verse state
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [repeatVerse, setRepeatVerse] = useState<boolean>(false);
+
+  // Dynamic audio controls sync
+  useEffect(() => {
+    if (audioInstance) {
+      audioInstance.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed, audioInstance]);
+
+  useEffect(() => {
+    if (verseAudioInstance) {
+      verseAudioInstance.playbackRate = playbackSpeed;
+      verseAudioInstance.loop = repeatVerse;
+    }
+  }, [playbackSpeed, repeatVerse, verseAudioInstance]);
+
   const matchedSurah = quranSurahsData[lesson.id];
 
   // Dynamic Full Quran Surah State
@@ -849,6 +870,9 @@ export default function IllustratedStory({
     const url = `https://everyayah.com/data/Alafasy_128kbps/${padSurah}${padVerse}.mp3`;
 
     const audio = new Audio(url);
+    audio.playbackRate = playbackSpeed;
+    audio.loop = repeatVerse;
+
     audio.play()
       .then(() => {
         setIsVerseLoading(false);
@@ -879,6 +903,7 @@ export default function IllustratedStory({
       }
 
       const audio = new Audio(matchedSurah.audioUrl);
+      audio.playbackRate = playbackSpeed;
       audio.play().catch(e => {
         console.error("Error playing recitation stream: ", e);
         setIsSurahPlaying(false);
@@ -1552,7 +1577,18 @@ export default function IllustratedStory({
       />
 
       {/* Physical Open-Book Spread container (Natural Tones Paper style) */}
-      <div className="bg-[#FAF9F6] border border-[#DCD3C1] rounded-[2rem] p-5 md:p-8 flex flex-col md:flex-row gap-0 book-shadow relative overflow-hidden min-h-[480px]">
+      <motion.div 
+        animate={(isSurahPlaying || playingVerseNumber !== null) ? {
+          boxShadow: [
+            "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
+            "0 0 35px 10px rgba(176, 137, 51, 0.25), 0 0 20px 2px rgba(16, 185, 129, 0.15)",
+            "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)"
+          ],
+          borderColor: ["#DCD3C1", "#B08933", "#10B981", "#DCD3C1"]
+        } : {}}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        className="bg-[#FAF9F6] border border-[#DCD3C1] rounded-[2rem] p-5 md:p-8 flex flex-col md:flex-row gap-0 book-shadow relative overflow-hidden min-h-[480px]"
+      >
         {activeTab === 'quran' && matchedSurah ? (
           <>
             {/* LEFT PAGE of Quran Spread (40% width): Tafsir, Audio controls, info */}
@@ -1572,9 +1608,47 @@ export default function IllustratedStory({
                   </p>
                 </div>
 
-                {/* Audio Recitation Player */}
-                <div className="bg-amber-50/50 border border-[#DCD3C1] p-4 rounded-2xl flex flex-col items-center gap-3">
-                  <div className="flex items-center gap-3 w-full justify-between">
+                {/* Audio Recitation Player with glowing visual effects */}
+                <motion.div 
+                  animate={isSurahPlaying ? {
+                    boxShadow: [
+                      "0 1px 3px rgba(0,0,0,0.05)",
+                      "0 0 25px 6px rgba(176, 137, 51, 0.35), 0 0 15px rgba(16, 185, 129, 0.2)",
+                      "0 1px 3px rgba(0,0,0,0.05)"
+                    ],
+                    borderColor: ["#DCD3C1", "#B08933", "#10B981", "#DCD3C1"]
+                  } : {}}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                  className="bg-amber-50/50 border border-[#DCD3C1] p-4 rounded-2xl flex flex-col items-center gap-3 relative overflow-hidden"
+                >
+                  {isSurahPlaying && (
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                      {[...Array(6)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="absolute text-yellow-500/40 text-xs select-none"
+                          style={{
+                            top: `${40 + Math.random() * 40}%`,
+                            left: `${15 + i * 15}%`,
+                          }}
+                          animate={{
+                            y: [0, -45],
+                            opacity: [0, 1, 0],
+                            scale: [0.6, 1.2, 0.6]
+                          }}
+                          transition={{
+                            duration: 2.5 + Math.random() * 1.5,
+                            repeat: Infinity,
+                            delay: i * 0.4,
+                            ease: "easeOut"
+                          }}
+                        >
+                          ✨
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 w-full justify-between relative z-10">
                     <div className="text-right">
                       <p className="text-[10px] text-[#8E8268] font-bold">الاستماع للقرآن الكريم</p>
                       <p className="text-xs font-black text-[#4A453E]">تلاوة مباركة بصوت ندي عذب 🎙️</p>
@@ -1599,7 +1673,7 @@ export default function IllustratedStory({
                   </div>
                   
                   {isSurahPlaying && (
-                    <div className="flex items-center gap-1 mt-1 justify-center w-full">
+                    <div className="flex items-center gap-1 mt-1 justify-center w-full relative z-10">
                       <span className="h-4 w-1 bg-[#B08933] rounded animate-bounce"></span>
                       <span className="h-6 w-1 bg-[#5A6B47] rounded animate-bounce [animation-delay:0.1s]"></span>
                       <span className="h-5 w-1 bg-[#B08933] rounded animate-bounce [animation-delay:0.2s]"></span>
@@ -1607,7 +1681,7 @@ export default function IllustratedStory({
                       <span className="h-4 w-1 bg-[#B08933] rounded animate-bounce [animation-delay:0.4s]"></span>
                     </div>
                   )}
-                </div>
+                </motion.div>
 
                 {/* Selected Ayah Explanation Box */}
                 {selectedQuranAyah !== null && (
@@ -1688,7 +1762,96 @@ export default function IllustratedStory({
                   </div>
                 </div>
 
-                <div className="bg-[#F7F3E9] border border-[#E9E1CD] rounded-2xl p-6 md:p-8 relative min-h-[300px] overflow-y-auto max-h-[400px]">
+                {/* الحفظ الذكي والمراجعة - لوحة التحكم في التلاوة والتكرار */}
+                <div className="bg-[#FAF9F6] border border-[#E9E1CD] rounded-2xl p-3 md:p-4 mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm shadow-amber-800/5">
+                  <div className="flex items-center gap-2" dir="rtl">
+                    <motion.div 
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 15, ease: "linear" }}
+                      className="w-8 h-8 rounded-full bg-amber-50 border border-[#DCD3C1] flex items-center justify-center text-[#B08933] flex-shrink-0"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </motion.div>
+                    <div className="text-right">
+                      <h4 className="text-xs font-black text-[#4A453E]">المُساعد الذكي للحفظ والتكرار</h4>
+                      <p className="text-[10px] text-[#8E8268] font-bold">تحكَّم في سرعة ووتيرة تلاوة الآيات الكريمة</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+                    {/* سرعة التلاوة */}
+                    <div className="flex items-center bg-[#F1EDE2] border border-[#E9E1CD] rounded-xl p-1 gap-1">
+                      <span className="text-[10px] font-black text-[#5C554E] px-2 flex items-center gap-1" dir="rtl">
+                        <Gauge className="w-3.5 h-3.5 text-[#B08933]" />
+                        السرعة:
+                      </span>
+                      <button
+                        onClick={() => {
+                          setPlaybackSpeed(1.0);
+                          SoundEngine.playSparkle();
+                        }}
+                        className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                          playbackSpeed === 1.0
+                            ? 'bg-[#B08933] text-white shadow-sm'
+                            : 'text-[#4A453E] hover:bg-[#E9E1CD]/50'
+                        }`}
+                      >
+                        عادية
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPlaybackSpeed(0.75);
+                          SoundEngine.playSparkle();
+                        }}
+                        className={`text-[10px] font-black px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                          playbackSpeed === 0.75
+                            ? 'bg-[#B08933] text-white shadow-sm'
+                            : 'text-[#4A453E] hover:bg-[#E9E1CD]/50'
+                        }`}
+                      >
+                        بطيئة
+                      </button>
+                    </div>
+
+                    {/* تكرار الآية */}
+                    <button
+                      onClick={() => {
+                        setRepeatVerse(!repeatVerse);
+                        SoundEngine.playSparkle();
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[10px] font-black cursor-pointer ${
+                        repeatVerse
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm shadow-emerald-800/5'
+                          : 'bg-white border-[#DCD3C1] text-[#4A453E] hover:bg-amber-50/50'
+                      }`}
+                      dir="rtl"
+                    >
+                      <motion.div
+                        animate={repeatVerse ? { rotate: [0, 360] } : {}}
+                        transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+                      >
+                        <Repeat className={`w-3.5 h-3.5 ${repeatVerse ? 'text-emerald-600' : 'text-[#8E8268]'}`} />
+                      </motion.div>
+                      <span>تكرار تلقائي</span>
+                      {repeatVerse && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <motion.div 
+                  animate={(isSurahPlaying || playingVerseNumber !== null) ? {
+                    borderColor: ["#E9E1CD", "#B08933", "#10B981", "#E9E1CD"],
+                    boxShadow: [
+                      "none",
+                      "inset 0 0 20px rgba(176, 137, 51, 0.2)",
+                      "none"
+                    ]
+                  } : {}}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  className="bg-[#F7F3E9] border border-[#E9E1CD] rounded-2xl p-6 md:p-8 relative min-h-[300px] overflow-y-auto max-h-[400px]"
+                >
                   {/* Watermark/Symbol of Quran */}
                   <div className="absolute inset-0 opacity-5 flex items-center justify-center pointer-events-none">
                     <span className="text-9xl">📖</span>
@@ -1719,11 +1882,11 @@ export default function IllustratedStory({
                           }}
                           className={`cursor-pointer inline-block mx-1.5 px-2.5 py-1.5 rounded-xl transition-all duration-300 relative ${
                             selectedQuranAyah === verse.number
-                              ? 'bg-amber-100 border-2 border-[#B08933] font-black text-[#B08933] scale-105 shadow-sm'
+                              ? 'bg-amber-100 border-2 border-[#B08933] font-black text-[#B08933] scale-105 shadow-sm shadow-[#B08933]/10'
                               : 'hover:bg-[#E9E1CD]/50 hover:text-emerald-800 border-2 border-transparent'
                           } ${
                             playingVerseNumber === verse.number
-                              ? 'ring-2 ring-emerald-500 bg-emerald-50/70 text-emerald-800 border-emerald-500 font-bold'
+                              ? 'ring-2 ring-emerald-500 bg-emerald-50/70 text-emerald-800 border-emerald-500 font-bold shadow-[0_0_15px_rgba(16,185,129,0.45)] animate-pulse scale-105'
                               : ''
                           }`}
                         >
@@ -1741,7 +1904,7 @@ export default function IllustratedStory({
                       ))}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               </div>
 
               {/* Progress and status decoration */}
@@ -1904,7 +2067,7 @@ export default function IllustratedStory({
         </div>
           </>
         )}
-      </div>
+      </motion.div>
 
 
       {/* Vocabulary Detail Modal/Drawer (Sand backdrop) */}

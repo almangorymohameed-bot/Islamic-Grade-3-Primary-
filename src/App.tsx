@@ -941,19 +941,6 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setActiveTab('stories'); SoundEngine.playSparkle(); }}
-                className={`py-3 px-4 font-bold text-sm border-b-2 transition-all flex items-center gap-2 whitespace-nowrap focus:outline-none cursor-pointer ${
-                  activeTab === 'stories'
-                    ? 'border-[#D48166] text-[#D48166] font-black'
-                    : 'border-transparent text-[#8E8268] hover:text-[#3A452E]'
-                }`}
-                id="tab-btn-stories"
-              >
-                <Sparkles className="w-5 h-5 shrink-0 text-[#D48166]" />
-                <span>المكتبة المصورة لكتب المنهج 📚</span>
-              </button>
-
-              <button
                 onClick={() => { setActiveTab('fiqh'); SoundEngine.playSparkle(); }}
                 className={`py-3 px-4 font-bold text-sm border-b-2 transition-all flex items-center gap-2 whitespace-nowrap focus:outline-none cursor-pointer ${
                   activeTab === 'fiqh'
@@ -1181,15 +1168,6 @@ export default function App() {
                   )}
                 </div>
               </div>
-            )}
-
-            {/* TAB: External Comic stories */}
-            {activeTab === 'stories' && (
-              <ComicLibrary 
-                onEarnStars={handleEarnStarsDirectly}
-                completedStoryIds={progress.completedStoryIds || []}
-                onMarkAsRead={handleMarkStoryAsRead}
-              />
             )}
 
             {/* TAB 2: Interactive Fiqh playground */}
